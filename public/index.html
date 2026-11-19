@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meu Instrutor - Gestão de Usuários (CRUD)</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 900px; margin: auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h1 { color: #1a56db; margin-top: 0; }
+    form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; background: #f9fafb; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb; }
+    input, select, button { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+    button { background: #1a56db; color: white; border: none; cursor: pointer; font-weight: bold; }
+    button:hover { background: #1e429f; }
+    .btn-cancelar { background: #6b7280; display: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 14px; }
+    th { background: #f3f4f6; }
+    .btn-editar { background: #d97706; padding: 6px 10px; margin-right: 5px; }
+    .btn-excluir { background: #dc2626; padding: 6px 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Meu Instrutor — Cadastro e Gestão de Usuários</h1>
+
+    <!-- Formulário CREATE / UPDATE -->
+    <form id="formUsuario">
+      <input type="hidden" id="usuarioId">
+      <input type="text" id="nome" placeholder="Nome completo" required>
+      <input type="email" id="email" placeholder="E-mail" required>
+      <input type="text" id="telefone" placeholder="Telefone (ex: 48999990000)" required>
+      <select id="tipo_usuario" required>
+        <option value="CANDIDATO">Candidato (Aluno)</option>
+        <option value="INSTRUTOR">Instrutor Credenciado</option>
+        <option value="ADMIN">Administrador</option>
+      </select>
+      <input type="password" id="senha_hash" placeholder="Senha" required>
+      <div>
+        <button type="submit" id="btnSalvar">Cadastrar Usuário (POST)</button>
+        <button type="button" id="btnCancelar" class="btn-cancelar" onclick="resetarForm()">Cancelar Edição</button>
+      </div>
+    </form>
+
+    <!-- Tabela READ -->
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Telefone</th>
+          <th>Tipo</th>
+          <th>Ações (Update / Delete)</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaUsuarios"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/usuarios';
+
+    // READ (GET)
+    async function carregarUsuarios() {
+      const res = await fetch(API_URL);
+      const usuarios = await res.json();
+      const tbody = document.getElementById('tabelaUsuarios');
+      tbody.innerHTML = '';
+
+      usuarios.forEach(u => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${u.nome}</td>
+            <td>${u.email}</td>
+            <td>${u.telefone || '-'}</td>
+            <td>${u.tipo_usuario}</td>
+            <td>
+              <button class="btn-editar" onclick="prepararEdicao('${u.id}', '${u.nome}', '${u.telefone || ''}')">Editar</button>
+              <button class="btn-excluir" onclick="excluirUsuario('${u.id}')">Excluir</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // CREATE (POST) e UPDATE (PUT)
+    document.getElementById('formUsuario').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('usuarioId').value;
+      const nome = document.getElementById('nome').value;
+      const email = document.getElementById('email').value;
+      const telefone = document.getElementById('telefone').value;
+      const tipo_usuario = document.getElementById('tipo_usuario').value;
+      const senha_hash = document.getElementById('senha_hash').value;
+
+      if (id) {
+        // UPDATE (PUT)
+        await fetch(`${API_URL}/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, telefone, ativo: true })
+        });
+      } else {
+        // CREATE (POST)
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, email, senha_hash, telefone, tipo_usuario })
+        });
+      }
+
+      resetarForm();
+      carregarUsuarios();
+    });
+
+    function prepararEdicao(id, nome, telefone) {
+      document.getElementById('usuarioId').value = id;
+      document.getElementById('nome').value = nome;
+      document.getElementById('telefone').value = telefone;
+      document.getElementById('email').disabled = true;
+      document.getElementById('senha_hash').disabled = true;
+      document.getElementById('tipo_usuario').disabled = true;
+      document.getElementById('btnSalvar').innerText = 'Salvar Alteração (PUT)';
+      document.getElementById('btnCancelar').style.display = 'inline-block';
+    }
+
+    function resetarForm() {
+      document.getElementById('formUsuario').reset();
+      document.getElementById('usuarioId').value = '';
+      document.getElementById('email').disabled = false;
+      document.getElementById('senha_hash').disabled = false;
+      document.getElementById('tipo_usuario').disabled = false;
+      document.getElementById('btnSalvar').innerText = 'Cadastrar Usuário (POST)';
+      document.getElementById('btnCancelar').style.display = 'none';
+    }
+
+    // DELETE
+    async function excluirUsuario(id) {
+      if (!confirm('Deseja realmente excluir este usuário do banco?')) return;
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      carregarUsuarios();
+    }
+
+    carregarUsuarios();
+  </script>
+</body>
+</html>
+

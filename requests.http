@@ -1,0 +1,33 @@
+@baseUrl = http://localhost:3000
+@usuarioId = 327775ca-f245-4899-ba88-c7ef2aba9f6e
+
+### Criar usuário
+POST {{baseUrl}}/usuarios
+Content-Type: application/json
+
+{
+  "nome": "carlos da Silva",
+  "email": "carlos.silva@example.com",
+  "senha_hash": "substitua-por-um-hash-seguro",
+  "telefone": "(11) 99999-9522",
+  "tipo_usuario": "CANDIDATO"
+}
+
+### Listar usuários
+GET {{baseUrl}}/usuarios
+
+### Buscar usuário por ID
+GET {{baseUrl}}/usuarios/{{usuarioId}}
+
+### Atualizar usuário
+PUT {{baseUrl}}/usuarios/{{usuarioId}}
+Content-Type: application/json
+
+{
+  "nome": "Maria Silva",
+  "telefone": "(11) 98888-7777",
+  "ativo": true
+}
+
+### Excluir usuário
+DELETE {{baseUrl}}/usuarios/{{usuarioId}}
